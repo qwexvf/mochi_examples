@@ -1,4 +1,7 @@
 import gleam/dynamic/decode
+import gleam/bit_array
+import gleam/crypto
+import gleam/string
 import gleam/list
 import gleam/result
 import mochi/query
@@ -76,7 +79,11 @@ pub fn build(pubsub: subscription.PubSub) {
       },
       resolve: fn(input, _ctx) {
         let #(title, body) = input
-        let post = Post("3", title, body)
+        let id =
+          crypto.strong_random_bytes(8)
+          |> bit_array.base16_encode
+          |> string.lowercase
+        let post = Post(id, title, body)
         subscription.publish(pubsub, "post:created", encode_post(post))
         Ok(post)
       },

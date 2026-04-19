@@ -96,14 +96,11 @@ fn build_schema() {
       args: [
         query.arg("first", schema.int_type()),
         query.arg("after", schema.string_type()),
-        query.arg("last", schema.int_type()),
-        query.arg("before", schema.string_type()),
       ],
       returns: schema.named_type("UserConnection"),
       decode: fn(args) {
         let first = query.get_optional_int(args, "first")
         let after = query.get_optional_string(args, "after")
-        // last/before for backwards pagination — not implemented in this example
         Ok(#(first, after))
       },
       resolve: fn(input, _ctx) {

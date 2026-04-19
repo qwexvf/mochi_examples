@@ -75,7 +75,7 @@ fn build_schema() {
 fn handle_apq(
   store: persisted_queries.PersistedQueryStore,
   my_schema,
-  query_opt,
+  query_opt: option.Option(String),
   hash: String,
 ) -> #(persisted_queries.PersistedQueryStore, String) {
   case persisted_queries.process_apq(store, query_opt, hash) {
