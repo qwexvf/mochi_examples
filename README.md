@@ -25,6 +25,21 @@ gleam run -m step2_inputs
 # ...and so on
 ```
 
+## Codegen example
+
+The `codegen/` directory is a standalone sub-project demonstrating the full
+`mochi_codegen` workflow — schema splitting, TypeScript generation, Gleam resolver
+stubs, and operation-based boilerplate from `.gql` files. Pre-generated output is
+committed so you can read the results immediately.
+
+```sh
+cd codegen
+gleam deps download
+gleam run -m mochi_codegen/cli -- generate
+```
+
+See [`codegen/README.md`](codegen/README.md) for the full config reference.
+
 ## Requirements
 
 - [Gleam](https://gleam.run) >= 1.0
