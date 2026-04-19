@@ -7,3 +7,5 @@ mochi = { git = "https://github.com/qwexvf/mochi", ref = "main" }
 mochi_websocket = { git = "https://github.com/qwexvf/mochi_websocket", ref = "main" }
 mochi_relay = { git = "https://github.com/qwexvf/mochi_relay", ref = "main" }
 mochi_apq = { git = "https://github.com/qwexvf/mochi_apq", ref = "main" }
+mochi_upload = { git = "https://github.com/qwexvf/mochi_upload", ref = "main" }
+simplifile = ">= 2.0.0 and < 3.0.0"

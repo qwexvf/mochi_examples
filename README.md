@@ -17,6 +17,7 @@ Each step is a self-contained file you can run independently.
 | 7 | `step7_subscriptions.gleam` | WebSocket subscriptions (graphql-ws) |
 | 8 | `step8_relay.gleam` | Relay cursor pagination with `mochi_relay` |
 | 9 | `step9_apq.gleam` | Automatic Persisted Queries with `mochi_apq` |
+| 10 | `step10_upload.gleam` | File uploads with `mochi_upload` |
 
 ## Running
 
