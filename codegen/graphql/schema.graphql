@@ -1,0 +1,16 @@
+type Query {
+  user(id: ID!): User
+  users(limit: Int, offset: Int): [User!]!
+  me: User
+  post(id: ID!): Post
+  posts(authorId: ID, limit: Int): [Post!]!
+}
+
+type Mutation {
+  createUser(input: CreateUserInput!): User!
+  updateUser(id: ID!, input: UpdateUserInput!): User!
+  deleteUser(id: ID!): Boolean!
+  createPost(input: CreatePostInput!): Post!
+  publishPost(id: ID!): Post!
+  deletePost(id: ID!): Boolean!
+}

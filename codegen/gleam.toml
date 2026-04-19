@@ -1,0 +1,7 @@
+name = "mochi_codegen_example"
+version = "0.1.0"
+
+[dependencies]
+gleam_stdlib = ">= 0.44.0 and < 2.0.0"
+mochi = { git = "https://github.com/qwexvf/mochi", ref = "main" }
+mochi_codegen = { git = "https://github.com/qwexvf/mochi_codegen", ref = "feat/operation-resolver-gen" }

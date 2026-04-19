@@ -1,0 +1,27 @@
+enum Role {
+  ADMIN
+  MEMBER
+  VIEWER
+}
+
+type User {
+  id: ID!
+  name: String!
+  email: String!
+  role: Role!
+  age: Int
+  posts: [Post!]!
+}
+
+input CreateUserInput {
+  name: String!
+  email: String!
+  role: Role!
+  age: Int
+}
+
+input UpdateUserInput {
+  name: String
+  email: String
+  role: Role
+}

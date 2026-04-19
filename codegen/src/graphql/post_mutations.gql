@@ -1,0 +1,15 @@
+mutation CreatePost($input: CreatePostInput!) {
+  createPost(input: $input) {
+    id
+    title
+    published
+  }
+}
+
+mutation PublishPost($id: ID!) {
+  publishPost(id: $id) {
+    id
+    title
+    published
+  }
+}

@@ -1,0 +1,51 @@
+# mochi.config.yaml — full configuration reference
+#
+# Run: gleam run -m mochi_codegen/cli -- generate
+
+# Schema source — glob, single path, or list of globs
+schema:
+  - "graphql/*.graphql"
+
+# Optional: generate resolver boilerplate from .gql client operation files.
+# Each operation becomes a resolver stub wired to the correct query/mutation.
+operations_input: "src/graphql/**/*.gql"
+
+output:
+  # TypeScript type definitions — always overwritten on regen
+  typescript: "src/generated/types.ts"
+
+  # Gleam domain types — trailing "/" = one file per schema file
+  # Overwritten only when content changes (safe to regen repeatedly)
+  gleam_types: "src/generated/"
+
+  # Gleam resolver stubs — new functions are appended, existing ones preserved
+  resolvers: "src/generated/"
+
+  # Gleam operation resolver stubs — generated from .gql files
+  # New functions appended, existing ones preserved
+  operations: "src/generated/"
+
+  # Normalised SDL output — omit to skip
+  sdl: "src/generated/schema.graphql"
+
+gleam:
+  # Module path prefix used in import statements for generated type files
+  types_module_prefix: "mochi_codegen_example/generated"
+
+  # Module path prefix used in import statements for generated resolver files
+  resolvers_module_prefix: "mochi_codegen_example/generated"
+
+  # Filename suffix for type files (e.g. "user" + "_types" → "user_types.gleam")
+  type_suffix: "_types"
+
+  # Filename suffix for resolver files
+  resolver_suffix: "_resolvers"
+
+  # Extra imports added to every generated resolver file
+  # The types module import is always added automatically
+  resolver_imports:
+    - "gleam/dict"
+    - "mochi/schema.{type ExecutionContext}"
+
+  # Add doc comments to generated types and resolvers
+  generate_docs: true
