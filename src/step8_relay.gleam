@@ -86,7 +86,7 @@ fn paginate(
 fn build_schema() {
   let #(user_type, encode_user) = user_schema()
 
-  // connection_types/1 returns (UserConnection, UserEdge, PageInfo) ObjectTypes
+  // connection_types/1 returns #(UserConnection, UserEdge, PageInfo) ObjectTypes
   let #(connection_type, edge_type, page_info_type) =
     connections.connection_types("User")
 
@@ -103,6 +103,7 @@ fn build_schema() {
       decode: fn(args) {
         let first = query.get_optional_int(args, "first")
         let after = query.get_optional_string(args, "after")
+        // last/before for backwards pagination — not implemented in this example
         Ok(#(first, after))
       },
       resolve: fn(input, _ctx) {

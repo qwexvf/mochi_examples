@@ -23,8 +23,6 @@ import http_server/schema as app_schema
 import mist
 import mochi/executor
 import mochi/response
-import mochi/schema
-import mochi/types
 import mochi_websocket/subscription
 import wisp
 import wisp/wisp_mist
@@ -35,11 +33,10 @@ pub fn main() {
 
   let pubsub = subscription.new_pubsub()
   let my_schema = app_schema.build(pubsub)
-  let ctx = schema.execution_context(types.to_dynamic(Nil))
 
   io.println("mochi GraphQL server → http://localhost:4000/graphql")
 
-  let handler = fn(req) { handle_request(req, my_schema, ctx) }
+  let handler = fn(req) { handle_request(req, my_schema) }
 
   let assert Ok(_) =
     handler
@@ -50,11 +47,7 @@ pub fn main() {
   process.sleep_forever()
 }
 
-fn handle_request(
-  req: wisp.Request,
-  my_schema,
-  _ctx: schema.ExecutionContext,
-) -> wisp.Response {
+fn handle_request(req: wisp.Request, my_schema) -> wisp.Response {
   use <- wisp.log_request(req)
   use <- wisp.rescue_crashes
 
