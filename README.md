@@ -15,6 +15,8 @@ Each step is a self-contained file you can run independently.
 | 5 | `step5_dataloader.gleam` | N+1 prevention with DataLoader |
 | 6 | `step6_schema_splitting.gleam` | Modular schema with `query.merge` |
 | 7 | `step7_subscriptions.gleam` | WebSocket subscriptions (graphql-ws) |
+| 8 | `step8_relay.gleam` | Relay cursor pagination with `mochi_relay` |
+| 9 | `step9_apq.gleam` | Automatic Persisted Queries with `mochi_apq` |
 
 ## Running
 
@@ -23,6 +25,20 @@ gleam deps download
 gleam run -m step1_basic
 gleam run -m step2_inputs
 # ...and so on
+```
+
+## HTTP server example
+
+The `http_server/` directory is a standalone sub-project showing a real
+Wisp + Mist HTTP server serving GraphQL over POST `/graphql`.
+
+```sh
+cd http_server
+gleam deps download
+gleam run -m http_server/server
+# then: curl -X POST http://localhost:4000/graphql \
+#         -H 'Content-Type: application/json' \
+#         -d '{"query":"{ posts { id title } }"}'
 ```
 
 ## Codegen example
