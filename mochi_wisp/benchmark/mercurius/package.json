@@ -1,0 +1,8 @@
+{
+  "name": "bench-mercurius",
+  "type": "module",
+  "dependencies": {
+    "fastify": "latest",
+    "mercurius": "latest"
+  }
+}

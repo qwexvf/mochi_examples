@@ -1,0 +1,8 @@
+{
+  "name": "bench-bun-yoga",
+  "type": "module",
+  "dependencies": {
+    "graphql-yoga": "latest",
+    "graphql": "latest"
+  }
+}

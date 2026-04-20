@@ -1,0 +1,28 @@
+services:
+  mercurius:
+    build: ./mercurius
+    ports:
+      - "4001:4001"
+    environment:
+      - DOCUMENT_CACHE=${DOCUMENT_CACHE:-true}
+
+  apollo:
+    build: ./apollo
+    ports:
+      - "4002:4002"
+    environment:
+      - DOCUMENT_CACHE=${DOCUMENT_CACHE:-true}
+
+  yoga:
+    build: ./yoga
+    ports:
+      - "4003:4003"
+    environment:
+      - DOCUMENT_CACHE=${DOCUMENT_CACHE:-true}
+
+  bun-yoga:
+    build: ./bun-yoga
+    ports:
+      - "4004:4004"
+    environment:
+      - DOCUMENT_CACHE=${DOCUMENT_CACHE:-true}

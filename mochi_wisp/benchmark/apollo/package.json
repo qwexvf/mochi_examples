@@ -1,0 +1,8 @@
+{
+  "name": "bench-apollo",
+  "type": "module",
+  "dependencies": {
+    "@apollo/server": "latest",
+    "graphql": "latest"
+  }
+}
