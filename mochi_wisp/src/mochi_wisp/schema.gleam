@@ -1,5 +1,7 @@
 import gleam/int
 import gleam/list
+import gleam/result
+import mochi/error
 import mochi/query
 
 @external(erlang, "env_ffi", "get_env")
@@ -60,26 +62,26 @@ pub fn build() -> schema.Schema {
 
   let users_query =
     query.query(
-      "users",
-      schema.list_type(schema.named_type("User")),
-      fn(_ctx) { Ok(all_users) },
-      fn(us) { types.to_dynamic(list.map(us, encode_user)) },
+      name: "users",
+      returns: schema.list_type(schema.named_type("User")),
+      resolve: fn(_ctx) { Ok(all_users) },
     )
+    |> query.with_encoder(fn(us) { types.to_dynamic(list.map(us, encode_user)) })
 
   let user_query =
     query.query_with_args(
       name: "user",
       args: [query.arg("id", schema.non_null(schema.id_type()))],
       returns: schema.named_type("User"),
-      decode: fn(args) { query.get_id(args, "id") },
-      resolve: fn(id, _ctx) {
+      resolve: fn(args, _ctx) {
+        use id <- result.try(query.get_id(args, "id"))
         case list.find(all_users, fn(u) { u.id == id }) {
           Ok(u) -> Ok(u)
-          Error(_) -> Error("User not found: " <> id)
+          Error(_) -> Error(error.new("User not found: " <> id))
         }
       },
-      encode: encode_user,
     )
+    |> query.with_encoder(encode_user)
 
   let builder =
     query.new()
