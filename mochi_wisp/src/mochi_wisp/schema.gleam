@@ -89,7 +89,7 @@ pub fn build() -> schema.Schema {
     |> query.add_type(post_type)
 
   case get_env("MOCHI_CACHE") {
-    Ok("false") -> query.build_without_cache(builder)
+    Ok("true") -> builder |> query.with_cache |> query.build
     _ -> query.build(builder)
   }
 }
