@@ -88,21 +88,21 @@ fn require_admin(ctx: schema.ExecutionContext) -> Result(Nil, String) {
 fn my_posts_query(encode_post) {
   // require_auth runs before the resolver — if it returns Error, resolver is skipped
   query.query(
-    "myPosts",
-    schema.list_type(schema.named_type("Post")),
-    fn(_ctx) { Ok(posts()) },
-    fn(ps) { types.to_dynamic(list.map(ps, encode_post)) },
+    name: "myPosts",
+    returns: schema.list_type(schema.named_type("Post")),
+    resolve: fn(_ctx) { Ok(posts()) },
   )
+  |> query.with_encoder(fn(ps) { types.to_dynamic(list.map(ps, encode_post)) })
   |> query.with_guard(require_auth)
 }
 
 fn public_posts_query(encode_post) {
   query.query(
-    "posts",
-    schema.list_type(schema.named_type("Post")),
-    fn(_ctx) { Ok(posts()) },
-    fn(ps) { types.to_dynamic(list.map(ps, encode_post)) },
+    name: "posts",
+    returns: schema.list_type(schema.named_type("Post")),
+    resolve: fn(_ctx) { Ok(posts()) },
   )
+  |> query.with_encoder(fn(ps) { types.to_dynamic(list.map(ps, encode_post)) })
 }
 
 // ── Mutations ─────────────────────────────────────────────────────────────────
@@ -113,11 +113,13 @@ fn delete_post_mutation() {
     name: "deletePost",
     args: [query.arg("id", schema.non_null(schema.id_type()))],
     returns: schema.non_null(schema.string_type()),
-    decode: fn(args) { query.get_id(args, "id") },
-    resolve: fn(id, _ctx) { Ok("Deleted post " <> id) },
-    encode: fn(msg) { types.to_dynamic(msg) },
+    resolve: fn(args, _ctx) {
+      use id <- result.try(query.get_id(args, "id"))
+      Ok("Deleted post " <> id)
+    },
   )
-  |> query.mutation_with_guard(query.all_of([require_auth, require_admin]))
+  |> query.with_encoder(fn(msg) { types.to_dynamic(msg) })
+  |> query.with_guard(query.all_of([require_auth, require_admin]))
 }
 
 // ── Schema ────────────────────────────────────────────────────────────────────
