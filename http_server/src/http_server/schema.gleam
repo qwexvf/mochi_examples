@@ -7,7 +7,7 @@ import gleam/result
 import mochi/query
 import mochi/schema
 import mochi/types
-import mochi_websocket/subscription
+import mochi_transport/subscription
 
 pub type Post {
   Post(id: String, title: String, body: String)

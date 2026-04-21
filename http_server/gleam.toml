@@ -10,5 +10,5 @@ gleam_erlang = ">= 1.0.0 and < 2.0.0"
 wisp = ">= 1.0.0 and < 4.0.0"
 mist = ">= 4.0.0 and < 9.0.0"
 mochi = { git = "https://github.com/qwexvf/mochi", ref = "main" }
-mochi_websocket = { git = "https://github.com/qwexvf/mochi_websocket", ref = "main" }
+mochi_transport = { git = "https://github.com/qwexvf/mochi_transport", ref = "main" }
 gleam_crypto = ">= 1.6.0 and < 2.0.0"

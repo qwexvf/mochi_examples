@@ -1,7 +1,7 @@
 // Step 7: WebSocket Subscriptions
 //
 // Real-time GraphQL subscriptions using the graphql-ws protocol.
-// mochi_websocket handles the protocol; mochi core defines the subscription field.
+// mochi_transport handles the protocol; mochi core defines the subscription field.
 //
 // Protocol flow:
 //   Client → ConnectionInit  →  Server: ConnectionAck
@@ -25,8 +25,8 @@ import mochi/query
 import mochi/response
 import mochi/schema
 import mochi/types
-import mochi_websocket/subscription
-import mochi_websocket/websocket
+import mochi_transport/subscription
+import mochi_transport/websocket
 
 // ── Domain type ───────────────────────────────────────────────────────────────
 

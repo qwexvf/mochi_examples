@@ -23,7 +23,7 @@ import http_server/schema as app_schema
 import mist
 import mochi/executor
 import mochi/response
-import mochi_websocket/subscription
+import mochi_transport/subscription
 import wisp
 import wisp/wisp_mist
 
