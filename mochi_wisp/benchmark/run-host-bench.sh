@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Benchmark mochi against Node.js GraphQL servers.
 # Runs two rounds: no document cache, then with document cache.
-# Competitors run in Docker; mochi runs on the host via gleam run.
+# All servers run in Docker for a fair comparison.
 #
 # Usage:
 #   ./run-host-bench.sh              # full run (simple + medium, both cache modes)
@@ -13,13 +13,10 @@ CONNECTIONS="${CONNECTIONS:-100}"
 WARMUP="${WARMUP:-3s}"
 
 BENCH_DIR="$(cd "$(dirname "$0")" && pwd)"
-MOCHI_DIR="$(cd "$BENCH_DIR/.." && pwd)"
 COMPOSE="$BENCH_DIR/docker-compose.yml"
-MOCHI_LOG="/tmp/mochi_bench.log"
 
-MOCHI_URL="http://localhost:4000/graphql"
 declare -A URLS=(
-  [mochi]="$MOCHI_URL"
+  [mochi]="http://localhost:4000/graphql"
   [mercurius]="http://localhost:4001/graphql"
   [apollo]="http://localhost:4002/graphql"
   [yoga]="http://localhost:4003/graphql"
@@ -34,7 +31,7 @@ port_open() {
 }
 
 wait_port() {
-  local port="$1" name="$2" timeout="${3:-30}"
+  local port="$1" name="$2" timeout="${3:-60}"
   for i in $(seq 1 "$timeout"); do
     if port_open "$port"; then
       printf "  ✓ %-20s ready\n" "$name"
@@ -46,27 +43,11 @@ wait_port() {
   return 1
 }
 
-stop_mochi() {
-  pkill -f "beam.smp.*mochi_wisp" 2>/dev/null || true
-  pkill -f "gleam run.*mochi_wisp" 2>/dev/null || true
-  # wait for port to free
-  for i in $(seq 1 10); do
-    port_open 4000 || return 0
-    sleep 1
-  done
-}
-
-start_mochi() {
-  local cache="$1"
-  stop_mochi
-  (cd "$MOCHI_DIR" && MOCHI_CACHE="$cache" gleam run) >"$MOCHI_LOG" 2>&1 &
-  wait_port 4000 "mochi (erlang)" 30
-}
-
-start_competitors() {
+start_all() {
   local doc_cache="$1"
   docker compose --file "$COMPOSE" down --remove-orphans >/dev/null 2>&1 || true
   DOCUMENT_CACHE="$doc_cache" docker compose --file "$COMPOSE" up -d --build >/dev/null 2>&1 || true
+  wait_port 4000 "mochi (erlang)" 60
   wait_port 4001 "mercurius" 30
   wait_port 4002 "apollo" 30
   wait_port 4003 "yoga (node)" 30
@@ -87,7 +68,7 @@ warmup() {
 }
 
 print_query_results() {
-  local script="$1" label="$2"
+  local script="$1"
   echo ""
   printf "  %-22s  %12s   %s\n" "server" "req/sec" "latency"
   printf "  %-22s  %12s   %s\n" "------" "-------" "-------"
@@ -109,17 +90,16 @@ print_round() {
 
   echo ""
   echo "  Simple query: { users { id name } }"
-  print_query_results "simple" "simple"
+  print_query_results "simple"
 
   echo ""
   echo "  Medium query: { users { id name email posts { id title } } }"
-  print_query_results "medium" "medium"
+  print_query_results "medium"
 }
 
 cleanup() {
   echo ""
   echo "Cleaning up..."
-  stop_mochi
   docker compose --file "$COMPOSE" down --remove-orphans >/dev/null 2>&1 || true
   echo "Done."
 }
@@ -130,8 +110,7 @@ trap cleanup EXIT
 
 echo ""
 echo "Starting servers (no document cache)..."
-start_competitors "false"
-start_mochi "false"
+start_all "false"
 
 echo ""
 echo "Warming up (${WARMUP})..."
@@ -144,8 +123,7 @@ print_round "NO DOCUMENT CACHE"
 echo ""
 echo ""
 echo "Restarting servers (with document cache)..."
-start_competitors "true"
-start_mochi "true"
+start_all "true"
 
 echo ""
 echo "Warming up (${WARMUP})..."

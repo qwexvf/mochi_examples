@@ -30,6 +30,7 @@ pub fn main() {
     |> wisp_mist.handler(secret)
     |> mist.new
     |> mist.port(port)
+    |> mist.bind("0.0.0.0")
     |> mist.start
   process.sleep_forever()
 }

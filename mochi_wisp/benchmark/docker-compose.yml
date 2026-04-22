@@ -1,4 +1,13 @@
 services:
+  mochi:
+    build:
+      context: ../../..
+      dockerfile: examples/mochi_wisp/benchmark/mochi/Dockerfile
+    ports:
+      - "4000:4000"
+    environment:
+      - MOCHI_CACHE=${DOCUMENT_CACHE:-true}
+
   mercurius:
     build: ./mercurius
     ports:
