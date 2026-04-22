@@ -7,6 +7,7 @@ import gleam/io
 import gleam/list
 import gleam/result
 import gleam/dynamic/decode
+import mochi/error
 import mochi/executor
 import mochi/query
 import mochi/response
@@ -54,11 +55,11 @@ fn build_schema() {
   // List query — no args
   let users_query =
     query.query(
-      "users",
-      schema.list_type(schema.named_type("User")),
-      fn(_ctx) { Ok(all_users()) },
-      fn(us) { types.to_dynamic(list.map(us, encode_user)) },
+      name: "users",
+      returns: schema.list_type(schema.named_type("User")),
+      resolve: fn(_ctx) { Ok(all_users()) },
     )
+    |> query.with_encoder(fn(us) { types.to_dynamic(list.map(us, encode_user)) })
 
   // Single query — requires id arg
   let get_user_query =
@@ -66,34 +67,30 @@ fn build_schema() {
       name: "user",
       args: [query.arg("id", schema.non_null(schema.id_type()))],
       returns: schema.named_type("User"),
-      decode: fn(args) { query.get_id(args, "id") },
-      resolve: fn(id, _ctx) {
+      resolve: fn(args, _ctx) {
+        use id <- result.try(query.get_id(args, "id"))
         list.find(all_users(), fn(u) { u.id == id })
-        |> result.map_error(fn(_) { "User not found: " <> id })
+        |> result.map_error(fn(_) { error.new("User not found: " <> id) })
       },
-      encode: encode_user,
     )
+    |> query.with_encoder(encode_user)
 
   // Mutation — creates a new user
   let create_user_mutation =
-    query.mutation(
+    query.mutation_with_args(
       name: "createUser",
       args: [
         query.arg("name", schema.non_null(schema.string_type())),
         query.arg("age", schema.non_null(schema.int_type())),
       ],
       returns: schema.non_null(schema.named_type("User")),
-      decode: fn(args) {
+      resolve: fn(args, _ctx) {
         use name <- result.try(query.get_string(args, "name"))
         use age <- result.try(query.get_int(args, "age"))
-        Ok(#(name, age))
-      },
-      resolve: fn(input, _ctx) {
-        let #(name, age) = input
         Ok(User("4", name, age))
       },
-      encode: encode_user,
     )
+    |> query.with_encoder(encode_user)
 
   query.new()
   |> query.add_query(users_query)

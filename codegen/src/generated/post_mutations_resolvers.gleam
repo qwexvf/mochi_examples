@@ -3,6 +3,8 @@
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
+import gleam/result
+import mochi/error
 import mochi/query
 import mochi/schema
 import mochi/types
@@ -11,48 +13,44 @@ import mochi/types
 // ── Mutations ───────────────────────────────────────────────────────────────
 
 fn create_post_mutation(_db: a) {
-  query.mutation(
+  query.mutation_with_args(
     name: "createPost",
     args: [query.arg("input", schema.NonNull(schema.Named("CreatePostInput")))],
     returns: schema.NonNull(schema.Named("Post")),
-    decode: fn(args: dict.Dict(String, Dynamic)) {
-      case dict.get(args, "input") {
-        Ok(input_dyn) -> {
-          let decoder = {
-            use title <- decode.field("title", decode.string)
-            use body <- decode.field("body", decode.string)
-            use author_id <- decode.field("authorId", decode.string)
-            decode.success(#(title, body, author_id))
-          }
-          case decode.run(input_dyn, decoder) {
-            Ok(input) -> Ok(input)
-            Error(_) -> Error("Invalid CreatePostInput")
-          }
-        }
-        Error(_) -> Error("Missing input argument")
-      }
-    },
-    resolve: fn(input, _ctx) {
+    resolve: fn(args: dict.Dict(String, Dynamic), _ctx) {
+      use input_dyn <- result.try(
+        dict.get(args, "input")
+        |> result.map_error(fn(_) { error.new("Missing input argument") }),
+      )
+      use input <- result.try(
+        decode.run(input_dyn, {
+          use title <- decode.field("title", decode.string)
+          use body <- decode.field("body", decode.string)
+          use author_id <- decode.field("authorId", decode.string)
+          decode.success(#(title, body, author_id))
+        })
+        |> result.map_error(fn(_) { error.new("Invalid CreatePostInput") }),
+      )
       let #(_title, _body, _author_id) = input
       // TODO: implement createPost resolver
-      Error("Not implemented: createPost")
+      Error(error.new("Not implemented: createPost"))
     },
-    encode: post_to_dynamic,
   )
+  |> query.with_encoder(post_to_dynamic)
 }
 
 fn publish_post_mutation(_db: a) {
-  query.mutation(
+  query.mutation_with_args(
     name: "publishPost",
     args: [query.arg("id", schema.NonNull(schema.Named("ID")))],
     returns: schema.NonNull(schema.Named("Post")),
-    decode: fn(args) { query.get_id(args, "id") },
-    resolve: fn(_id, _ctx) {
+    resolve: fn(args, _ctx) {
+      use _id <- result.try(query.get_id(args, "id"))
       // TODO: implement publishPost resolver
-      Error("Not implemented: publishPost")
+      Error(error.new("Not implemented: publishPost"))
     },
-    encode: post_to_dynamic,
   )
+  |> query.with_encoder(post_to_dynamic)
 }
 
 // ── Encoders ────────────────────────────────────────────────────────────────

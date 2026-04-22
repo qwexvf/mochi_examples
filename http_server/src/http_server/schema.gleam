@@ -4,6 +4,7 @@ import gleam/crypto
 import gleam/string
 import gleam/list
 import gleam/result
+import mochi/error
 import mochi/query
 import mochi/schema
 import mochi/types
@@ -37,48 +38,44 @@ pub fn build(pubsub: subscription.PubSub) {
 
   let posts_query =
     query.query(
-      "posts",
-      schema.list_type(schema.named_type("Post")),
-      fn(_ctx) {
+      name: "posts",
+      returns: schema.list_type(schema.named_type("Post")),
+      resolve: fn(_ctx) {
         Ok([
           Post("1", "Hello Gleam", "Gleam is a type-safe functional language."),
           Post("2", "mochi GraphQL", "Code-first GraphQL for Gleam."),
         ])
       },
-      fn(ps) { types.to_dynamic(list.map(ps, encode_post)) },
     )
+    |> query.with_encoder(fn(ps) { types.to_dynamic(list.map(ps, encode_post)) })
 
   let get_post_query =
     query.query_with_args(
       name: "post",
       args: [query.arg("id", schema.non_null(schema.id_type()))],
       returns: schema.named_type("Post"),
-      decode: fn(args) { query.get_id(args, "id") },
-      resolve: fn(id, _ctx) {
+      resolve: fn(args, _ctx) {
+        use id <- result.try(query.get_id(args, "id"))
         case id {
           "1" -> Ok(Post("1", "Hello Gleam", "Gleam is a type-safe functional language."))
           "2" -> Ok(Post("2", "mochi GraphQL", "Code-first GraphQL for Gleam."))
-          _ -> Error("Post not found: " <> id)
+          _ -> Error(error.new("Post not found: " <> id))
         }
       },
-      encode: encode_post,
     )
+    |> query.with_encoder(encode_post)
 
   let create_post_mutation =
-    query.mutation(
+    query.mutation_with_args(
       name: "createPost",
       args: [
         query.arg("title", schema.non_null(schema.string_type())),
         query.arg("body", schema.non_null(schema.string_type())),
       ],
       returns: schema.non_null(schema.named_type("Post")),
-      decode: fn(args) {
+      resolve: fn(args, _ctx) {
         use title <- result.try(query.get_string(args, "title"))
         use body <- result.try(query.get_string(args, "body"))
-        Ok(#(title, body))
-      },
-      resolve: fn(input, _ctx) {
-        let #(title, body) = input
         let id =
           crypto.strong_random_bytes(8)
           |> bit_array.base16_encode
@@ -87,16 +84,16 @@ pub fn build(pubsub: subscription.PubSub) {
         subscription.publish(pubsub, "post:created", encode_post(post))
         Ok(post)
       },
-      encode: encode_post,
     )
+    |> query.with_encoder(encode_post)
 
   let post_created_sub =
     query.subscription(
-      "postCreated",
-      schema.named_type("Post"),
-      "post:created",
-      fn(p: Post) { encode_post(p) },
+      name: "postCreated",
+      returns: schema.named_type("Post"),
+      topic: "post:created",
     )
+    |> query.with_encoder(encode_post)
 
   query.new()
   |> query.add_query(posts_query)

@@ -9,6 +9,7 @@ import gleam/io
 import gleam/list
 import gleam/result
 import gleam/dynamic/decode
+import mochi/error
 import mochi/executor
 import mochi/query
 import mochi/response
@@ -62,21 +63,23 @@ fn user_schema() -> query.SchemaBuilder {
 
   let users_query =
     query.query(
-      "users",
-      schema.list_type(schema.named_type("User")),
-      fn(_ctx) { Ok(all_users()) },
-      fn(us) { types.to_dynamic(list.map(us, encode_user)) },
+      name: "users",
+      returns: schema.list_type(schema.named_type("User")),
+      resolve: fn(_ctx) { Ok(all_users()) },
     )
+    |> query.with_encoder(fn(us) { types.to_dynamic(list.map(us, encode_user)) })
 
   let create_user =
-    query.mutation(
+    query.mutation_with_args(
       name: "createUser",
       args: [query.arg("name", schema.non_null(schema.string_type()))],
       returns: schema.non_null(schema.named_type("User")),
-      decode: fn(args) { query.get_string(args, "name") },
-      resolve: fn(name, _ctx) { Ok(User("3", name)) },
-      encode: encode_user,
+      resolve: fn(args, _ctx) {
+        use name <- result.try(query.get_string(args, "name"))
+        Ok(User("3", name))
+      },
     )
+    |> query.with_encoder(encode_user)
 
   query.new()
   |> query.add_query(users_query)
@@ -104,40 +107,40 @@ fn post_schema() -> query.SchemaBuilder {
 
   let posts_query =
     query.query(
-      "posts",
-      schema.list_type(schema.named_type("Post")),
-      fn(_ctx) { Ok(all_posts()) },
-      fn(ps) {
-        types.to_dynamic(
-          list.map(ps, fn(p) {
-            types.record([
-              types.field("id", p.id),
-              types.field("title", p.title),
-              types.field("author_id", p.author_id),
-            ])
-          }),
-        )
-      },
+      name: "posts",
+      returns: schema.list_type(schema.named_type("Post")),
+      resolve: fn(_ctx) { Ok(all_posts()) },
     )
+    |> query.with_encoder(fn(ps) {
+      types.to_dynamic(
+        list.map(ps, fn(p) {
+          types.record([
+            types.field("id", p.id),
+            types.field("title", p.title),
+            types.field("author_id", p.author_id),
+          ])
+        }),
+      )
+    })
 
   let post_query =
     query.query_with_args(
       name: "post",
       args: [query.arg("id", schema.non_null(schema.id_type()))],
       returns: schema.named_type("Post"),
-      decode: fn(args) { query.get_id(args, "id") },
-      resolve: fn(id, _ctx) {
+      resolve: fn(args, _ctx) {
+        use id <- result.try(query.get_id(args, "id"))
         list.find(all_posts(), fn(p) { p.id == id })
-        |> result.map_error(fn(_) { "Post not found" })
-      },
-      encode: fn(p) {
-        types.record([
-          types.field("id", p.id),
-          types.field("title", p.title),
-          types.field("author_id", p.author_id),
-        ])
+        |> result.map_error(fn(_) { error.new("Post not found") })
       },
     )
+    |> query.with_encoder(fn(p) {
+      types.record([
+        types.field("id", p.id),
+        types.field("title", p.title),
+        types.field("author_id", p.author_id),
+      ])
+    })
 
   let _ = encode_post
 
@@ -170,22 +173,22 @@ fn comment_schema() -> query.SchemaBuilder {
       name: "comments",
       args: [query.arg("postId", schema.non_null(schema.id_type()))],
       returns: schema.list_type(schema.named_type("Comment")),
-      decode: fn(args) { query.get_id(args, "postId") },
-      resolve: fn(post_id, _ctx) {
+      resolve: fn(args, _ctx) {
+        use post_id <- result.try(query.get_id(args, "postId"))
         Ok(list.filter(all_comments(), fn(c) { c.post_id == post_id }))
       },
-      encode: fn(cs) {
-        types.to_dynamic(
-          list.map(cs, fn(c) {
-            types.record([
-              types.field("id", c.id),
-              types.field("body", c.body),
-              types.field("post_id", c.post_id),
-            ])
-          }),
-        )
-      },
     )
+    |> query.with_encoder(fn(cs) {
+      types.to_dynamic(
+        list.map(cs, fn(c) {
+          types.record([
+            types.field("id", c.id),
+            types.field("body", c.body),
+            types.field("post_id", c.post_id),
+          ])
+        }),
+      )
+    })
 
   let _ = encode_comment
 

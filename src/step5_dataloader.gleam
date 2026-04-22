@@ -130,21 +130,21 @@ fn build_schema() {
 
   let posts_query =
     query.query(
-      "posts",
-      schema.list_type(schema.named_type("Post")),
-      fn(_ctx) { Ok(all_posts()) },
-      fn(ps) {
-        types.to_dynamic(
-          list.map(ps, fn(p) {
-            types.record([
-              types.field("id", p.id),
-              types.field("title", p.title),
-              types.field("author_id", p.author_id),
-            ])
-          }),
-        )
-      },
+      name: "posts",
+      returns: schema.list_type(schema.named_type("Post")),
+      resolve: fn(_ctx) { Ok(all_posts()) },
     )
+    |> query.with_encoder(fn(ps) {
+      types.to_dynamic(
+        list.map(ps, fn(p) {
+          types.record([
+            types.field("id", p.id),
+            types.field("title", p.title),
+            types.field("author_id", p.author_id),
+          ])
+        }),
+      )
+    })
 
   query.new()
   |> query.add_query(posts_query)
@@ -165,7 +165,7 @@ fn build_ctx(encode_author: fn(Author) -> Dynamic) {
     )
 
   schema.execution_context(types.to_dynamic(dict.new()))
-  |> schema.add_data_loader("authors", author_loader)
+  |> schema.with_loader("authors", author_loader)
 }
 
 fn run(my_schema, ctx, gql) {

@@ -9,6 +9,7 @@ import gleam/list
 import gleam/option.{None, Some}
 import gleam/result
 import gleam/dynamic/decode
+import mochi/error
 import mochi/executor
 import mochi/query
 import mochi/response
@@ -80,47 +81,46 @@ fn users_query(encode_user) {
     name: "users",
     args: [query.arg("limit", schema.int_type())],
     returns: schema.list_type(schema.named_type("User")),
-    decode: fn(args) { Ok(query.get_optional_int(args, "limit")) },
-    resolve: fn(limit, _ctx) {
+    resolve: fn(args, _ctx) {
+      let limit = query.get_optional_int(args, "limit")
       let all = users()
       Ok(case limit {
         Some(n) -> list.take(all, n)
         None -> all
       })
     },
-    encode: fn(us) { types.to_dynamic(list.map(us, encode_user)) },
   )
+  |> query.with_encoder(fn(us) { types.to_dynamic(list.map(us, encode_user)) })
 }
 
 // ── Mutations ─────────────────────────────────────────────────────────────────
 
 fn create_user_mutation(encode_user) {
   // Decode the nested input object from the args dict
-  query.mutation(
+  query.mutation_with_args(
     name: "createUser",
     args: [
       query.arg("input", schema.non_null(schema.named_type("CreateUserInput"))),
     ],
     returns: schema.non_null(schema.named_type("User")),
-    decode: fn(args) {
+    resolve: fn(args, _ctx) {
       use input_dyn <- result.try(
         dict.get(args, "input")
-        |> result.map_error(fn(_) { "Missing required argument: input" }),
+        |> result.map_error(fn(_) { error.new("Missing required argument: input") }),
       )
-      decode.run(input_dyn, {
-        use name <- decode.field("name", decode.string)
-        use role <- decode.field("role", decode.string)
-        use age <- decode.optional_field("age", None, decode.optional(decode.int))
-        decode.success(#(name, role, age))
-      })
-      |> result.map_error(fn(_) { "Failed to decode CreateUserInput" })
-    },
-    resolve: fn(input, _ctx) {
-      let #(name, role, age) = input
+      use #(name, role, age) <- result.try(
+        decode.run(input_dyn, {
+          use name <- decode.field("name", decode.string)
+          use role <- decode.field("role", decode.string)
+          use age <- decode.optional_field("age", None, decode.optional(decode.int))
+          decode.success(#(name, role, age))
+        })
+        |> result.map_error(fn(_) { error.new("Failed to decode CreateUserInput") }),
+      )
       Ok(User(id: "3", name: name, role: role, age: age))
     },
-    encode: encode_user,
   )
+  |> query.with_encoder(encode_user)
 }
 
 // ── Schema ────────────────────────────────────────────────────────────────────

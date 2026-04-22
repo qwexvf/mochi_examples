@@ -109,7 +109,7 @@ fn public_posts_query(encode_post) {
 
 fn delete_post_mutation() {
   // all_of chains guards — both must pass
-  query.mutation(
+  query.mutation_with_args(
     name: "deletePost",
     args: [query.arg("id", schema.non_null(schema.id_type()))],
     returns: schema.non_null(schema.string_type()),

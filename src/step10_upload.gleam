@@ -20,6 +20,7 @@ import gleam/io
 import gleam/list
 import gleam/result
 import gleam/string
+import mochi/error
 import mochi/executor
 import mochi/query
 import mochi/response
@@ -72,26 +73,26 @@ fn build_schema() {
   // Here we decode it with upload.from_dynamic which expects an UploadedFile
   // that was placed into args by the HTTP layer.
   let upload_mutation =
-    query.mutation(
+    query.mutation_with_args(
       name: "uploadFile",
       args: [query.arg("file", schema.non_null(schema.named_type("Upload")))],
       returns: schema.non_null(schema.named_type("FileInfo")),
-      decode: fn(args) {
+      resolve: fn(args, _ctx) {
         use file_dyn <- result.try(
           dict.get(args, "file")
-          |> result.map_error(fn(_) { "Missing required argument: file" }),
+          |> result.map_error(fn(_) { error.new("Missing required argument: file") }),
         )
-        upload.from_dynamic(file_dyn)
-        |> result.map_error(fn(e) { "Invalid Upload value: " <> e })
-      },
-      resolve: fn(file: upload.UploadedFile, _ctx) {
+        use file <- result.try(
+          upload.from_dynamic(file_dyn)
+          |> result.map_error(fn(e) { error.new("Invalid Upload value: " <> e) }),
+        )
         use validated <- result.try(
           upload.validate(file, config)
-          |> result.map_error(upload.format_error),
+          |> result.map_error(fn(e) { error.new(upload.format_error(e)) }),
         )
         use content <- result.try(
           upload.read_string(validated)
-          |> result.map_error(upload.format_error),
+          |> result.map_error(fn(e) { error.new(upload.format_error(e)) }),
         )
         let preview = string.slice(content, 0, 80)
         let info =
@@ -104,17 +105,21 @@ fn build_schema() {
         let _ = upload.cleanup(validated)
         Ok(info)
       },
-      encode: encode_file_info,
     )
+    |> query.with_encoder(encode_file_info)
 
   // listUploads — return the names of accepted MIME types from config
   let config_query =
     query.query(
-      "acceptedMimeTypes",
-      schema.list_type(schema.string_type()),
-      fn(_ctx) { Ok(upload.allow_images(upload.default_config()).allowed_mime_types) },
-      fn(types_list) { types.to_dynamic(list.map(types_list, types.to_dynamic)) },
+      name: "acceptedMimeTypes",
+      returns: schema.list_type(schema.string_type()),
+      resolve: fn(_ctx) {
+        Ok(upload.allow_images(upload.default_config()).allowed_mime_types)
+      },
     )
+    |> query.with_encoder(fn(types_list) {
+      types.to_dynamic(list.map(types_list, types.to_dynamic))
+    })
 
   query.new()
   |> query.add_scalar(upload.upload_scalar())
