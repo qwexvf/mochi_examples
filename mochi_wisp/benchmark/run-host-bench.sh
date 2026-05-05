@@ -16,7 +16,7 @@ BENCH_DIR="$(cd "$(dirname "$0")" && pwd)"
 COMPOSE="$BENCH_DIR/docker-compose.yml"
 
 declare -A URLS=(
-  [mochi]="http://localhost:4000/graphql"
+  [mochi]="http://localhost:4100/graphql"
   [mercurius]="http://localhost:4001/graphql"
   [apollo]="http://localhost:4002/graphql"
   [yoga]="http://localhost:4003/graphql"
@@ -47,7 +47,7 @@ start_all() {
   local doc_cache="$1"
   docker compose --file "$COMPOSE" down --remove-orphans >/dev/null 2>&1 || true
   DOCUMENT_CACHE="$doc_cache" docker compose --file "$COMPOSE" up -d --build >/dev/null 2>&1 || true
-  wait_port 4000 "mochi (erlang)" 60
+  wait_port 4100 "mochi (erlang)" 60
   wait_port 4001 "mercurius" 30
   wait_port 4002 "apollo" 30
   wait_port 4003 "yoga (node)" 30
